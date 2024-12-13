@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QSize
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
  
- 
+#set-up program GUI 
 class NotificationBox(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -54,7 +54,7 @@ class NotificationBox(QFrame):
     def closeNotifications(self):
         self.hide()
  
- 
+#Image Tagging Algorithm 
 class ImageTagger(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -139,6 +139,7 @@ class ImageTagger(QMainWindow):
  
         self.show()
  
+    #Get/Select images to use
     def uploadImages(self):
         options = QFileDialog.Options()
         fileNames, _ = QFileDialog.getOpenFileNames(self, 'Open Image Files', '', 'All Files (*)', options=options)
@@ -149,6 +150,7 @@ class ImageTagger(QMainWindow):
                 self.processImage(fileName)
             self.notificationBox.addNotification(f"{len(fileNames)} images uploaded successfully!", self.imageFrame)
  
+    #Select image to present on GUI
     def addThumbnail(self, fileName):
         image = QPixmap(fileName)
         if image.isNull():
@@ -161,6 +163,7 @@ class ImageTagger(QMainWindow):
         item.setText(os.path.basename(fileName))
         self.thumbnailList.addItem(item)
  
+    #Display main selected image on DUI
     def displayImageFromThumbnail(self, item):
         fileName = None
         for path in self.uploaded_images:
@@ -170,23 +173,27 @@ class ImageTagger(QMainWindow):
         if fileName and os.path.exists(fileName):
             self.displayImage(fileName)
  
+    #Display other images on GUI
     def displayImage(self, fileName):
         image = QPixmap(fileName)
         if not image.isNull():
             self.label.setPixmap(image.scaled(self.label.size(), Qt.KeepAspectRatio))
  
+    #Manually select which folder to save in
     def setSaveFolder(self):
         folder = QFileDialog.getExistingDirectory(self, 'Select Folder')
         if folder:
             self.save_folder = folder
             QMessageBox.information(self, 'Folder Selected', f"Images will be saved to: {self.save_folder}")
  
+    #Analyze and Process images
     def processImage(self, fileName):
         tags = self.generateTags(fileName)
         self.image_tags[fileName] = tags
         self.saveImage(fileName, tags)
         self.updateTagFilterCheckBoxes(tags)
  
+    #Tag images based on processed information
     def generateTags(self, fileName):
         image = Image.open(fileName)
         candidate_labels = [
@@ -201,6 +208,7 @@ class ImageTagger(QMainWindow):
         confidence_threshold = 0.3
         return [candidate_labels[i] for i, prob in enumerate(probs.tolist()) if prob >= confidence_threshold]
  
+    #Save images to selected folder based on tags
     def saveImage(self, fileName, tags):
         if not self.save_folder:
             self.notificationBox.addNotification("Please set a save folder first!", self.imageFrame)
@@ -216,6 +224,7 @@ class ImageTagger(QMainWindow):
         except Exception as e:
             self.notificationBox.addNotification(f"An error occurred while saving the image: {str(e)}", self.imageFrame)
  
+    #Adjust Tag to view
     def updateTagFilterCheckBoxes(self, tags):
         for tag in tags:
             if tag not in self.tagCheckBoxes:
@@ -225,6 +234,7 @@ class ImageTagger(QMainWindow):
                 self.tagCheckBoxes[tag] = checkbox
                 self.tagFilterLayout.addWidget(checkbox)
  
+    #Select tag and view related images
     def filterImagesByTag(self):
         selected_tags = [tag for tag, checkbox in self.tagCheckBoxes.items() if checkbox.isChecked()]
         self.thumbnailList.clear()
@@ -232,6 +242,7 @@ class ImageTagger(QMainWindow):
             if set(selected_tags).intersection(tags) or not selected_tags:
                 self.addThumbnail(fileName)
  
+    #Remove image from folder
     def removeImage(self):
         selected_items = self.thumbnailList.selectedItems()
         if not selected_items:
@@ -255,7 +266,7 @@ class ImageTagger(QMainWindow):
             self.thumbnailList.takeItem(self.thumbnailList.row(selected_item))
             QMessageBox.information(self, 'Image Removed', f"Image '{fileName}' removed from sorted folders.")
  
- 
+#Main Program running 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = ImageTagger()
